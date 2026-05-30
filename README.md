@@ -1,6 +1,6 @@
 # AI Lead Scoring Engine
 
-[![CI](https://github.com/yourusername/ai-lead-scoring-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/ai-lead-scoring-engine/actions)
+[![CI](https://github.com/Nikkk2312/ai-lead-scoring-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/Nikkk2312/ai-lead-scoring-engine/actions)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](Dockerfile)
