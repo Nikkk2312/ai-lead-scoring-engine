@@ -1,0 +1,378 @@
+openapi: 3.1.0
+info:
+  title: AI Lead Scoring Engine API
+  description: |
+    REST API for the AI-powered B2B lead scoring engine. Provides endpoints for
+    retrieving scored leads, pipeline run history, health checks, and more.
+  version: 3.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000
+    description: Local development
+
+paths:
+  /api/leads:
+    get:
+      summary: List all scored leads
+      operationId: listLeads
+      parameters:
+        - name: tier
+          in: query
+          schema:
+            type: string
+            enum: [Hot, Warm, Cold]
+          description: Filter by tier
+      responses:
+        "200":
+          description: Array of scored leads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lead"
+
+  /api/leads/{domain}:
+    get:
+      summary: Get single lead with full details
+      operationId: getLeadDetail
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+          example: stripe.com
+      responses:
+        "200":
+          description: Lead with company details and score
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  company:
+                    $ref: "#/components/schemas/Company"
+                  score:
+                    $ref: "#/components/schemas/Lead"
+        "404":
+          description: Lead not found
+
+  /api/runs:
+    get:
+      summary: List pipeline runs
+      operationId: listRuns
+      responses:
+        "200":
+          description: Array of pipeline runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Run"
+
+  /api/runs/{id}:
+    get:
+      summary: Get run details with scores
+      operationId: getRunDetail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Run with scores and errors
+        "404":
+          description: Run not found
+
+  /api/webhook:
+    post:
+      summary: Trigger scoring via webhook
+      operationId: triggerWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [leads]
+              properties:
+                leads:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      domain:
+                        type: string
+                      company_name:
+                        type: string
+      responses:
+        "200":
+          description: Webhook accepted
+        "400":
+          description: Invalid payload
+
+  /api/feedback:
+    post:
+      summary: Submit lead feedback
+      operationId: submitFeedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [domain, feedback_type]
+              properties:
+                domain:
+                  type: string
+                feedback_type:
+                  type: string
+                  enum: [accept, reject, too_high, too_low]
+                comment:
+                  type: string
+      responses:
+        "200":
+          description: Feedback recorded
+
+  /api/health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, unhealthy]
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/stats:
+    get:
+      summary: Database statistics
+      operationId: getStats
+      responses:
+        "200":
+          description: Database statistics
+
+  /api/export/csv:
+    get:
+      summary: Export leads as CSV
+      operationId: exportCsv
+      responses:
+        "200":
+          description: CSV file download
+          content:
+            text/csv: {}
+
+  /api/activity:
+    get:
+      summary: Activity feed
+      operationId: getActivity
+      responses:
+        "200":
+          description: Recent activity events
+
+  /api/demo:
+    get:
+      summary: Sanitized demo data
+      operationId: getDemoData
+      responses:
+        "200":
+          description: Public-safe demo data
+
+  /api/leads/bulk:
+    post:
+      summary: Bulk lookup leads by domain array
+      operationId: bulkLeads
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [domains]
+              properties:
+                domains:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 100
+      responses:
+        "200":
+          description: Bulk lookup results
+
+  /api/routing-rules:
+    get:
+      summary: Lead routing assignments by tier and size
+      operationId: getRoutingRules
+      responses:
+        "200":
+          description: Routing queues with assigned leads
+
+  /api/gdpr/export/{domain}:
+    get:
+      summary: GDPR data export for a domain
+      operationId: gdprExport
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: All stored data for the domain
+        "404":
+          description: Domain not found
+
+  /api/gdpr/delete/{domain}:
+    post:
+      summary: GDPR deletion request for a domain
+      operationId: gdprDelete
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deletion request acknowledged
+
+  /api/sla:
+    get:
+      summary: SLA monitoring and system health metrics
+      operationId: getSla
+      responses:
+        "200":
+          description: System health with response times
+
+  /api/duplicates:
+    get:
+      summary: Detect potential duplicate leads
+      operationId: getDuplicates
+      responses:
+        "200":
+          description: List of potential duplicates
+
+  /api/load-sample-data:
+    post:
+      summary: Load 40 sample companies with pre-scored data
+      operationId: loadSampleData
+      responses:
+        "200":
+          description: Sample data loaded
+
+components:
+  schemas:
+    Lead:
+      type: object
+      properties:
+        company_name:
+          type: string
+        domain:
+          type: string
+        total_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        tier:
+          type: string
+          enum: [Hot, Warm, Cold]
+        rule_score:
+          type: integer
+        soft_score:
+          type: integer
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        buying_stage:
+          type: string
+          enum: [Target, Awareness, Consideration, Decision, Purchase]
+        fit_score_pct:
+          type: integer
+        engagement_score_pct:
+          type: integer
+        intent_score_pct:
+          type: integer
+        fit_grade:
+          type: string
+          enum: [A, B, C]
+        engagement_grade:
+          type: string
+          enum: ["1", "2", "3"]
+        matrix_cell:
+          type: string
+        key_signal:
+          type: string
+        reasoning:
+          type: string
+        outreach_line:
+          type: string
+        industry_classified:
+          type: string
+
+    Company:
+      type: object
+      properties:
+        id:
+          type: integer
+        company_name:
+          type: string
+        domain:
+          type: string
+        description:
+          type: string
+        industry:
+          type: string
+        hq_country:
+          type: string
+        founding_year:
+          type: integer
+        employee_estimate:
+          type: string
+        tech_stack:
+          type: string
+        social_linkedin:
+          type: string
+
+    Run:
+      type: object
+      properties:
+        id:
+          type: integer
+        icp_name:
+          type: string
+        total_leads:
+          type: integer
+        hot_count:
+          type: integer
+        warm_count:
+          type: integer
+        cold_count:
+          type: integer
+        error_count:
+          type: integer
+        status:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time

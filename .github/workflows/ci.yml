@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run dashboard tests
+        run: python test_dashboard.py
+
+      - name: Run import checks
+        run: |
+          python -c "import config; print('config OK')"
+          python -c "import database; database.init_db(); print('database OK')"
+          python -c "import scoring; print('scoring OK')"
+          python -c "import enrichment; print('enrichment OK')"
+          python -c "import signals; print('signals OK')"
+          python -c "import reports; print('reports OK')"
+          python -c "import notifications; print('notifications OK')"
+          python -c "import integrations; print('integrations OK')"
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff
+      - name: Lint with ruff
+        run: ruff check --select=E,F,W --ignore=E501,E722,F841,W605 .
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t ai-lead-scoring-engine .
+      - name: Verify container starts
+        run: |
+          docker run -d --name test-app -p 5000:5000 ai-lead-scoring-engine
+          sleep 3
+          curl -f http://localhost:5000/api/health || exit 1
+          docker stop test-app
