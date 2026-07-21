@@ -1,0 +1,19 @@
+# One-click permanent hosting on Render (free tier).
+# Deploy: https://render.com/deploy?repo=https://github.com/Nikkk2312/ai-lead-scoring-engine
+# Render auto-redeploys on every push to GitHub, so this stays current with no maintenance.
+services:
+  - type: web
+    name: ai-lead-scoring-engine
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python main.py dashboard"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: DASHBOARD_SECRET_KEY
+        generateValue: true
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        value: changeme

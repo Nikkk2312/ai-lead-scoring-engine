@@ -4,7 +4,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](Dockerfile)
-[![Live Demo](https://img.shields.io/badge/%F0%9F%A4%97%20Live%20Demo-online-brightgreen.svg)](https://nikkk2312-ai-lead-scoring-engine.hf.space)
+[![Open in Codespaces](https://img.shields.io/badge/Codespaces-run%20in%20browser-24292e.svg?logo=github)](https://codespaces.new/Nikkk2312/ai-lead-scoring-engine)
 
 A self-hosted, AI-powered B2B lead scoring pipeline with **136 features** across 4 tiers. Enriches company data from free public sources and scores leads against your Ideal Customer Profile using deterministic rules + local LLM reasoning.
 
@@ -14,12 +14,12 @@ A self-hosted, AI-powered B2B lead scoring pipeline with **136 features** across
 
 | Option | How | What happens |
 |--------|-----|--------------|
-| **Live demo** | **[Open the hosted dashboard](https://nikkk2312-ai-lead-scoring-engine.hf.space)** | Loads instantly with 40 pre-scored sample leads. Login is pre-filled (`admin` / `changeme`) - just click **Sign In**. |
-| **Run in browser** | [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Nikkk2312/ai-lead-scoring-engine) | Boots a full dev container, installs everything, auto-starts the dashboard, and opens it on port 5000. |
+| **Run in browser** | [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Nikkk2312/ai-lead-scoring-engine) | Boots a full dev container, installs everything, auto-starts the dashboard, and opens it on port 5000. Nothing to install. |
+| **Free hosted URL** | [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Nikkk2312/ai-lead-scoring-engine) | One click deploys a permanent public URL. Render auto-redeploys on every push, so it stays current with zero maintenance. |
 | **Run locally (Docker)** | `docker compose up` | One command. Builds, auto-seeds sample data, serves at http://localhost:5000. No Python or Ollama needed. |
 | **Run locally (Python)** | `pip install -r requirements.txt && python main.py dashboard` | Dashboard at http://localhost:5000. Auto-seeds sample data on first run. |
 
-> The dashboard **auto-seeds 40 sample companies** on first launch, so every install is immediately explorable - no empty screens. The local LLM (Ollama) is **optional** and only needed to score brand-new real leads with advanced reasoning.
+> Every path lands on the same dashboard, which **auto-seeds 40 sample companies** on first launch - no empty screens. Login is **pre-filled** (`admin` / `changeme`), so you just click **Sign In**. The local LLM (Ollama) is **optional** and only needed to score brand-new real leads with advanced reasoning.
 
 ## How It Works
 
