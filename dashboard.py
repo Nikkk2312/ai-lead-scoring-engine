@@ -14,6 +14,7 @@ import io
 from config import (
     DASHBOARD_PORT, DASHBOARD_SECRET_KEY, ICPS, SCORE_DIMENSIONS,
     SCORING_TEMPLATES, BUYING_STAGES, SCORE_DECAY, TIER_THRESHOLDS,
+    ADMIN_USERNAME, ADMIN_PASSWORD,
 )
 
 try:
@@ -32,7 +33,7 @@ from database import (
     save_feedback, get_feedback, get_feedback_stats,
     log_audit, get_audit_log,
     save_setting, get_setting, get_all_settings,
-    get_enrichment_coverage, get_activity_feed,
+    get_enrichment_coverage, get_activity_feed, update_lead_stage,
 )
 from reports import sanitize_for_demo, generate_explainability_report, check_bias_quality
 from dashboard_pages import (
@@ -122,16 +123,18 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <p class="sub">Sign in to your dashboard</p>
   {% if error %}<div class="err">{{ error }}</div>{% endif %}
   <form method="POST">
-    <input type="text" name="username" placeholder="Username" required autofocus>
-    <input type="password" name="password" placeholder="Password" required>
+    <input type="text" name="username" placeholder="Username" value="{{ demo_user }}" required autofocus>
+    <input type="password" name="password" placeholder="Password" value="{{ demo_pass }}" required>
     <button type="submit">Sign In</button>
   </form>
+  <p class="sub" style="margin:18px 0 0;font-size:.78em">Demo login is pre-filled &mdash; just click <strong>Sign In</strong>.<br>Username <code>{{ demo_user }}</code> &middot; Password <code>{{ demo_pass }}</code></p>
 </div></body></html>"""
 
 BASE_HTML = """<!DOCTYPE html>
 <html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{{ title }} - AI Lead Scoring Engine</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="/static/chart.umd.min.js"></script>
+<script>if(typeof Chart==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4"><\/script>');}</script>
 <style>
 :root,[data-theme="dark"]{--bg:#060918;--surface:#0d1224;--card:#111827;--card-hover:#1a2236;--border:#1e293b;
       --accent:#6366f1;--accent2:#8b5cf6;--text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;
@@ -1432,7 +1435,8 @@ def create_app():
                 session["role"] = user["role"]
                 return redirect(url_for("index"))
             error = "Invalid username or password"
-        return render_template_string(LOGIN_HTML, error=error)
+        return render_template_string(LOGIN_HTML, error=error,
+                                      demo_user=ADMIN_USERNAME, demo_pass=ADMIN_PASSWORD)
 
     @app.route("/logout")
     def logout():
@@ -2139,8 +2143,8 @@ def create_app():
         return jsonify({
             "status": "healthy",
             "db_query_ms": round(db_time, 2),
-            "total_leads": stats.get("total_companies", 0),
-            "total_runs": stats.get("total_runs", 0),
+            "total_leads": stats.get("companies", stats.get("scores", 0)),
+            "total_runs": stats.get("runs", 0),
             "last_run_hours_ago": round(last_run_age, 1) if last_run_age else None,
             "uptime_status": "green" if db_time < 100 else "yellow" if db_time < 500 else "red",
         })
@@ -2180,48 +2184,20 @@ def create_app():
                           headers={"Content-Disposition": "inline;filename=openapi.yaml"})
         return jsonify({"error": "OpenAPI spec not found"}), 404
 
+    @app.route("/api/lead/<domain>/stage", methods=["POST"])
+    def api_update_stage(domain):
+        """Persist a Kanban drag-drop stage change."""
+        data = request.get_json(silent=True) or request.form
+        stage = (data.get("stage") or "").strip()
+        if update_lead_stage(domain, stage):
+            return jsonify({"status": "ok", "domain": domain, "stage": stage})
+        return jsonify({"status": "error", "reason": "invalid domain or stage"}), 400
+
     # --- Sample Data Loader ---
     @app.route("/api/load-sample-data", methods=["POST"])
     def load_sample_data():
         try:
-            run_id = create_run("default", len(SAMPLE_COMPANIES), "sample-data")
-            hot = warm = cold = 0
-            for c in SAMPLE_COMPANIES:
-                company_data = {k: v for k, v in c.items() if k not in (
-                    "total_score","tier","rule_score","soft_score","confidence",
-                    "key_signal","reasoning","outreach_line","next_action","rule_breakdown",
-                    "fit_score_pct","engagement_score_pct","intent_score_pct","buying_stage",
-                    "fit_grade","engagement_grade","matrix_cell")}
-                for k in ("tech_stack", "competitor_tech"):
-                    if isinstance(company_data.get(k), list):
-                        company_data[k] = json.dumps(company_data[k])
-                company_id = upsert_company(company_data)
-                score_data = {}
-                score_fields = [
-                    "company_name","domain","total_score","tier","rule_score","soft_score",
-                    "confidence","key_signal","reasoning","outreach_line","next_action",
-                    "rule_breakdown","industry_classified","hq_country","founding_year",
-                    "employee_estimate","email_pattern","social_linkedin","careers_jobs_count",
-                    "tech_stack","fit_score_pct","engagement_score_pct","intent_score_pct",
-                    "buying_stage","fit_grade","engagement_grade","matrix_cell",
-                ]
-                for k in score_fields:
-                    if k in c:
-                        score_data[k] = c[k]
-                if isinstance(score_data.get("rule_breakdown"), dict):
-                    score_data["rule_breakdown"] = json.dumps(score_data["rule_breakdown"])
-                if isinstance(score_data.get("tech_stack"), list):
-                    score_data["tech_stack"] = json.dumps(score_data["tech_stack"])
-                # Set fit_score from rule_score for DB storage
-                score_data["fit_score"] = c.get("rule_score", 0)
-                score_data["engagement_score"] = int(c.get("engagement_score_pct", 0) * 40 / 100)
-                score_data["intent_score"] = int(c.get("intent_score_pct", 0) * 30 / 100)
-                save_score(company_id, run_id, score_data)
-                record_score_history(c["domain"], c["total_score"], c["tier"], "default")
-                if c["tier"] == "Hot": hot += 1
-                elif c["tier"] == "Warm": warm += 1
-                else: cold += 1
-            complete_run(run_id, hot, warm, cold, 0)
+            run_id = seed_sample_data()
             return jsonify({"status": "ok", "companies": len(SAMPLE_COMPANIES), "run_id": run_id})
         except Exception as e:
             return jsonify({"status": "error", "reason": str(e)[:200]}), 500
@@ -2229,11 +2205,65 @@ def create_app():
     return app
 
 
+def seed_sample_data():
+    """Populate the database with the built-in SAMPLE_COMPANIES.
+
+    Shared by the /api/load-sample-data route and the auto-seed on startup so a
+    fresh (empty) database never renders a blank dashboard. Returns the run id.
+    """
+    run_id = create_run("default", len(SAMPLE_COMPANIES), "sample-data")
+    hot = warm = cold = 0
+    for c in SAMPLE_COMPANIES:
+        company_data = {k: v for k, v in c.items() if k not in (
+            "total_score","tier","rule_score","soft_score","confidence",
+            "key_signal","reasoning","outreach_line","next_action","rule_breakdown",
+            "fit_score_pct","engagement_score_pct","intent_score_pct","buying_stage",
+            "fit_grade","engagement_grade","matrix_cell")}
+        for k in ("tech_stack", "competitor_tech"):
+            if isinstance(company_data.get(k), list):
+                company_data[k] = json.dumps(company_data[k])
+        company_id = upsert_company(company_data)
+        score_data = {}
+        score_fields = [
+            "company_name","domain","total_score","tier","rule_score","soft_score",
+            "confidence","key_signal","reasoning","outreach_line","next_action",
+            "rule_breakdown","industry_classified","hq_country","founding_year",
+            "employee_estimate","email_pattern","social_linkedin","careers_jobs_count",
+            "tech_stack","fit_score_pct","engagement_score_pct","intent_score_pct",
+            "buying_stage","fit_grade","engagement_grade","matrix_cell",
+        ]
+        for k in score_fields:
+            if k in c:
+                score_data[k] = c[k]
+        if isinstance(score_data.get("rule_breakdown"), dict):
+            score_data["rule_breakdown"] = json.dumps(score_data["rule_breakdown"])
+        if isinstance(score_data.get("tech_stack"), list):
+            score_data["tech_stack"] = json.dumps(score_data["tech_stack"])
+        # Set fit_score from rule_score for DB storage
+        score_data["fit_score"] = c.get("rule_score", 0)
+        score_data["engagement_score"] = int(c.get("engagement_score_pct", 0) * 40 / 100)
+        score_data["intent_score"] = int(c.get("intent_score_pct", 0) * 30 / 100)
+        save_score(company_id, run_id, score_data)
+        record_score_history(c["domain"], c["total_score"], c["tier"], "default")
+        if c["tier"] == "Hot": hot += 1
+        elif c["tier"] == "Warm": warm += 1
+        else: cold += 1
+    complete_run(run_id, hot, warm, cold, 0)
+    return run_id
+
+
 def run_dashboard():
     if not HAS_FLASK:
         print("[DASHBOARD] Flask not installed. Run: pip install flask")
         return
     init_db()
+    # Auto-seed sample data so a fresh/empty database never shows a blank dashboard.
+    try:
+        if get_db_stats().get("scores", 0) == 0:
+            seed_sample_data()
+            print("[DASHBOARD] Empty database detected - seeded {} sample companies".format(len(SAMPLE_COMPANIES)))
+    except Exception as e:
+        print("[DASHBOARD] Sample-data auto-seed skipped: {}".format(e))
     app = create_app()
     print("[DASHBOARD] Starting on http://localhost:{}".format(DASHBOARD_PORT))
     app.run(host="0.0.0.0", port=DASHBOARD_PORT, debug=False)

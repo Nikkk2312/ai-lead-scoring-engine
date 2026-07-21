@@ -1,22 +1,14 @@
 # AI Lead Scoring Engine - Docker Compose
-# One-command deploy: docker compose up -d
+#
+# One command, zero setup:   docker compose up
+#   -> builds the app, auto-seeds 40 sample leads, serves the dashboard
+#   -> open http://localhost:5000  (login is pre-filled: admin / changeme)
+#
+# The LLM (Ollama) is OPTIONAL and OFF by default so the demo starts instantly.
+# To also run the local LLM for advanced enrichment:
+#   docker compose --profile llm up
 
 services:
-  ollama:
-    image: ollama/ollama:latest
-    container_name: lead-scorer-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    restart: unless-stopped
-    # Pull model on first run: docker exec lead-scorer-ollama ollama pull llama3.1:8b
-
   lead-scorer:
     build: .
     container_name: lead-scorer-app
@@ -25,15 +17,13 @@ services:
     volumes:
       - scorer_data:/app/data
     environment:
+      - DASHBOARD_PORT=5000
+      - DASHBOARD_SECRET_KEY=${DASHBOARD_SECRET_KEY:-demo-secret-key}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
+      # Point at the optional Ollama service if you start the "llm" profile
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_MODEL=llama3.1:8b
-      - DATABASE_URL=sqlite:///data/lead_scorer.db
-      - DASHBOARD_PORT=5000
-      - DASHBOARD_SECRET_KEY=${DASHBOARD_SECRET_KEY:-change-me-in-production}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
-    depends_on:
-      ollama:
-        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
@@ -43,6 +33,18 @@ services:
     restart: unless-stopped
     command: python main.py dashboard
 
+  # Optional local LLM - only starts with:  docker compose --profile llm up
+  ollama:
+    image: ollama/ollama:latest
+    container_name: lead-scorer-ollama
+    profiles: ["llm"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    # Pull the model once:  docker exec lead-scorer-ollama ollama pull llama3.1:8b
+
 volumes:
-  ollama_data:
   scorer_data:
+  ollama_data:

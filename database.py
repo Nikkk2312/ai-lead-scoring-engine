@@ -592,6 +592,27 @@ def get_db_stats() -> dict:
     return stats
 
 
+def update_lead_stage(domain: str, stage: str) -> bool:
+    """Persist a Kanban stage change to the lead's most recent score row."""
+    valid = {"Target", "Awareness", "Consideration", "Decision", "Purchase"}
+    if stage not in valid:
+        return False
+    conn = get_connection()
+    row = conn.execute("SELECT id FROM companies WHERE domain=?", (domain,)).fetchone()
+    if not row:
+        conn.close()
+        return False
+    cid = row["id"]
+    conn.execute(
+        """UPDATE scores SET buying_stage=? WHERE id=(
+               SELECT id FROM scores WHERE company_id=? ORDER BY scored_at DESC, id DESC LIMIT 1)""",
+        (stage, cid),
+    )
+    conn.commit()
+    conn.close()
+    return True
+
+
 # --- Feature 90: Multi-user auth ---
 
 def authenticate_user(username: str, password: str) -> dict | None:

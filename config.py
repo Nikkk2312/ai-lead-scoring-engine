@@ -29,7 +29,9 @@ APOLLO_API_KEY = os.getenv("APOLLO_API_KEY", "")
 GOOGLE_SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "")
 GOOGLE_OAUTH_CLIENT_FILE = os.getenv("GOOGLE_OAUTH_CLIENT_FILE", "")
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "")
-DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "5000"))
+# Honor a generic PORT env var first so hosted platforms (HuggingFace Spaces,
+# Render, Railway, Codespaces, Heroku) that inject $PORT work out of the box.
+DASHBOARD_PORT = int(os.getenv("PORT", os.getenv("DASHBOARD_PORT", "5000")))
 DASHBOARD_SECRET_KEY = os.getenv("DASHBOARD_SECRET_KEY", "dev-secret-key")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")

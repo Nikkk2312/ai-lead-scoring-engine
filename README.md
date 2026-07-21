@@ -4,10 +4,22 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](Dockerfile)
+[![Live Demo](https://img.shields.io/badge/%F0%9F%A4%97%20Live%20Demo-online-brightgreen.svg)](https://nikkk2312-ai-lead-scoring-engine.hf.space)
 
 A self-hosted, AI-powered B2B lead scoring pipeline with **136 features** across 4 tiers. Enriches company data from free public sources and scores leads against your Ideal Customer Profile using deterministic rules + local LLM reasoning.
 
 **Zero API costs. Fully local. Privacy-first.**
+
+## Try It Now (one click, no setup)
+
+| Option | How | What happens |
+|--------|-----|--------------|
+| **Live demo** | **[Open the hosted dashboard](https://nikkk2312-ai-lead-scoring-engine.hf.space)** | Loads instantly with 40 pre-scored sample leads. Login is pre-filled (`admin` / `changeme`) - just click **Sign In**. |
+| **Run in browser** | [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Nikkk2312/ai-lead-scoring-engine) | Boots a full dev container, installs everything, auto-starts the dashboard, and opens it on port 5000. |
+| **Run locally (Docker)** | `docker compose up` | One command. Builds, auto-seeds sample data, serves at http://localhost:5000. No Python or Ollama needed. |
+| **Run locally (Python)** | `pip install -r requirements.txt && python main.py dashboard` | Dashboard at http://localhost:5000. Auto-seeds sample data on first run. |
+
+> The dashboard **auto-seeds 40 sample companies** on first launch, so every install is immediately explorable - no empty screens. The local LLM (Ollama) is **optional** and only needed to score brand-new real leads with advanced reasoning.
 
 ## How It Works
 
@@ -42,6 +54,11 @@ CSV Input -> Domain Cleanup -> Website Fetch -> Wikidata Lookup -> Tech Detectio
 
 ```bash
 pip install -r requirements.txt
+
+# Start the web dashboard (auto-seeds sample data, open http://localhost:5000)
+python main.py dashboard
+
+# --- optional: only needed to score NEW real leads with local-LLM reasoning ---
 ollama pull llama3.1:8b
 
 # Score sample companies
@@ -63,9 +80,13 @@ python main.py dashboard
 ### Docker
 
 ```bash
-docker compose up -d
+# Just the dashboard (fast, no LLM) - recommended for trying it out
+docker compose up
+# Dashboard at http://localhost:5000  (login pre-filled: admin / changeme)
+
+# Optional: also run the local LLM for advanced enrichment
+docker compose --profile llm up -d
 docker exec lead-scorer-ollama ollama pull llama3.1:8b
-# Dashboard at http://localhost:5000
 ```
 
 ### CSV Format

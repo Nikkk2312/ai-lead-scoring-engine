@@ -28,7 +28,13 @@ function kanbanDrop(e,stage){
   e.preventDefault();
   const domain=e.dataTransfer.getData('text/plain');
   document.querySelectorAll('.kanban-card').forEach(c=>c.classList.remove('dragging'));
-  showToast('Moved '+domain+' to '+stage);
+  const col=e.currentTarget.querySelector('h4 .cnt')?e.currentTarget:e.target.closest('.kanban-col');
+  const card=document.getElementById('kc-'+domain.replace(/\\./g,'_'));
+  if(card&&col){col.appendChild(card);}
+  fetch('/api/lead/'+encodeURIComponent(domain)+'/stage',{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({stage:stage})})
+    .then(r=>r.json()).then(d=>{showToast(d.status==='ok'?'Moved '+domain+' to '+stage:'Move failed');})
+    .catch(()=>showToast('Move failed'));
 }
 </script>
 """
