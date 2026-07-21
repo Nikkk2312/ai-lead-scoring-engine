@@ -4,6 +4,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](Dockerfile)
+[![Live Demo](https://img.shields.io/badge/live%20demo-online-brightgreen.svg)](https://ai-lead-scoring-engine-63rl.onrender.com)
 [![Open in Codespaces](https://img.shields.io/badge/Codespaces-run%20in%20browser-24292e.svg?logo=github)](https://codespaces.new/Nikkk2312/ai-lead-scoring-engine)
 
 A self-hosted, AI-powered B2B lead scoring pipeline with **136 features** across 4 tiers. Enriches company data from free public sources and scores leads against your Ideal Customer Profile using deterministic rules + local LLM reasoning.
@@ -14,8 +15,9 @@ A self-hosted, AI-powered B2B lead scoring pipeline with **136 features** across
 
 | Option | How | What happens |
 |--------|-----|--------------|
+| **Live demo (hosted)** | **[ai-lead-scoring-engine-63rl.onrender.com](https://ai-lead-scoring-engine-63rl.onrender.com)** | Open the link. Loads with 40 pre-scored sample leads; login is pre-filled (`admin` / `changeme`) - just click **Sign In**. Free tier sleeps when idle, so the first visit after a nap takes ~50s to wake. |
 | **Run in browser** | [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Nikkk2312/ai-lead-scoring-engine) | Boots a full dev container, installs everything, auto-starts the dashboard, and opens it on port 5000. Nothing to install. |
-| **Free hosted URL** | [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Nikkk2312/ai-lead-scoring-engine) | One click deploys a permanent public URL. Render auto-redeploys on every push, so it stays current with zero maintenance. |
+| **Deploy your own** | [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Nikkk2312/ai-lead-scoring-engine) | One click deploys your own permanent public URL. Render auto-redeploys on every push, so it stays current with zero maintenance. |
 | **Run locally (Docker)** | `docker compose up` | One command. Builds, auto-seeds sample data, serves at http://localhost:5000. No Python or Ollama needed. |
 | **Run locally (Python)** | `pip install -r requirements.txt && python main.py dashboard` | Dashboard at http://localhost:5000. Auto-seeds sample data on first run. |
 
