@@ -141,6 +141,33 @@ paths:
         "200":
           description: Feedback recorded
 
+  /api/lead/{domain}/stage:
+    post:
+      summary: Update a lead's buying stage (Kanban move)
+      operationId: updateLeadStage
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stage]
+              properties:
+                stage:
+                  type: string
+                  enum: [Target, Awareness, Consideration, Decision, Purchase]
+      responses:
+        "200":
+          description: Stage updated
+        "400":
+          description: Invalid domain or stage
+
   /api/health:
     get:
       summary: Health check
